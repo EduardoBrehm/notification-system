@@ -154,6 +154,18 @@ Robust error handling with specific exceptions:
 - `NotificationNotFoundException`: When a notification cannot be found
 - Proper error logging with PSR-3 logger
 
+## Documentation
+
+Complete technical documentation is available in both English and Portuguese:
+
+### English Documentation
+- [English Documentation (Markdown)](docs/documentation_en.md)
+- [English Documentation (PDF)](docs/Laminas_Notification_System.pdf)
+
+### Portuguese Documentation
+- [Documentação em Português (Markdown)](docs/documentacao_pt_BR.md)
+- [Documentação em Português (PDF)](docs/Sistema_de_Notificacoes_Laminas.pdf)
+
 ## Testing
 
 The module comes with comprehensive unit tests. To run the tests:
