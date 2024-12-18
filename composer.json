@@ -1,5 +1,5 @@
 {
-    "name": "laminas/notification-system",
+    "name": "eduardobrehm/notification-system",
     "description": "A sophisticated notification and redirection system for Laminas applications",
     "type": "library",
     "license": "MIT",
