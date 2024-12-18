@@ -2,14 +2,17 @@
     "name": "eduardobrehm/notification-system",
     "description": "A sophisticated notification and redirection system for Laminas applications",
     "type": "library",
+    "version": "1.0.0",
     "license": "MIT",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
     "keywords": [
         "laminas",
         "notification",
         "redirect"
     ],
     "require": {
-        "php": "^8.3",
+        "php": "^8.1",
         "laminas/laminas-mvc": "^3.6",
         "laminas/laminas-db": "^2.20",
         "laminas/laminas-json": "^3.5",
