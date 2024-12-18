@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  app:
+    build: .
+    ports:
+      - "8080:80"
+    volumes:
+      - .:/var/www
+      - ./docker/php/custom-php.ini:/usr/local/etc/php/conf.d/custom-php.ini
+    environment:
+      - COMPOSER_MEMORY_LIMIT=-1
+      - PHP_IDE_CONFIG=serverName=notification-system
+    depends_on:
+      - db
+
+  db:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=root
+      - MYSQL_DATABASE=notification_system
+      - MYSQL_USER=notification
+      - MYSQL_PASSWORD=notification
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+volumes:
+  mysql_data:
