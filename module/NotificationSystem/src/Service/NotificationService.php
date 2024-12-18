@@ -6,8 +6,13 @@ use DateTime;
 use Laminas\EventManager\EventManagerInterface;
 use Laminas\EventManager\EventManager;
 use Laminas\EventManager\EventManagerAwareInterface;
+use NotificationSystem\DTO\CreateNotificationDTO;
 use NotificationSystem\Entity\Notification;
+use NotificationSystem\Exception\NotificationNotFoundException;
 use NotificationSystem\Repository\NotificationRepository;
+use NotificationSystem\Service\NotificationCacheService;
+use NotificationSystem\Validator\NotificationValidator;
+use Psr\Log\LoggerInterface;
 
 class NotificationService implements EventManagerAwareInterface
 {
@@ -16,6 +21,9 @@ class NotificationService implements EventManagerAwareInterface
 
     public function __construct(
         private NotificationRepository $notificationRepository,
+        private NotificationValidator $validator,
+        private NotificationCacheService $cache,
+        private LoggerInterface $logger,
         array $config
     ) {
         $this->config = $config['notification_system'] ?? [];
@@ -32,55 +40,100 @@ class NotificationService implements EventManagerAwareInterface
         return $this->eventManager;
     }
 
-    public function createNotification(
-        string $type,
-        string $message,
-        string $typeMessage,
-        ?int $relationId = null,
-        ?string $userId = null
-    ): Notification {
-        $notification = new Notification();
-        $notification
-            ->setType($type)
-            ->setMessage($message)
-            ->setTypeMessage($typeMessage)
-            ->setRelationId($relationId)
-            ->setUserId($userId);
+    public function createNotification(CreateNotificationDTO $dto): Notification
+    {
+        try {
+            $this->validator->validateCreateDTO($dto);
 
-        $this->notificationRepository->save($notification);
+            $notification = new Notification();
+            $notification
+                ->setType($dto->getType())
+                ->setMessage($dto->getMessage())
+                ->setTypeMessage($dto->getTypeMessage())
+                ->setRelationId($dto->getRelationId())
+                ->setUserId($dto->getUserId());
 
-        $this->getEventManager()->trigger('notification.created', $this, [
-            'notification' => $notification
-        ]);
+            $this->notificationRepository->save($notification);
+            $this->cache->setCachedNotification($notification);
 
-        return $notification;
+            if ($dto->getUserId()) {
+                $this->cache->invalidateUnreadCount($dto->getUserId());
+            }
+
+            $this->getEventManager()->trigger('notification.created', $this, [
+                'notification' => $notification
+            ]);
+
+            return $notification;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to create notification', [
+                'error' => $e->getMessage(),
+                'dto' => $dto,
+            ]);
+            throw $e;
+        }
     }
 
     public function markAsRead(int $id, ?string $userId = null): bool
     {
-        $notification = $this->notificationRepository->find($id);
-        
-        if (!$notification) {
-            return false;
+        try {
+            $notification = $this->cache->getCachedNotification($id) 
+                ?? $this->notificationRepository->find($id);
+            
+            if (!$notification) {
+                throw new NotificationNotFoundException($id);
+            }
+
+            if ($userId && $notification->getUserId() !== $userId) {
+                return false;
+            }
+
+            $notification->setIsRead(true);
+            $this->notificationRepository->save($notification);
+            $this->cache->setCachedNotification($notification);
+
+            if ($notification->getUserId()) {
+                $this->cache->invalidateUnreadCount($notification->getUserId());
+            }
+
+            $this->getEventManager()->trigger('notification.read', $this, [
+                'notification' => $notification
+            ]);
+
+            return true;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to mark notification as read', [
+                'error' => $e->getMessage(),
+                'id' => $id,
+                'userId' => $userId,
+            ]);
+            throw $e;
         }
-
-        if ($userId && $notification->getUserId() !== $userId) {
-            return false;
-        }
-
-        $notification->setIsRead(true);
-        $this->notificationRepository->save($notification);
-
-        $this->getEventManager()->trigger('notification.read', $this, [
-            'notification' => $notification
-        ]);
-
-        return true;
     }
 
     public function getUnreadCount(?string $userId = null): int
     {
-        return $this->notificationRepository->countUnread($userId);
+        if (!$userId) {
+            return $this->notificationRepository->countUnread(null);
+        }
+
+        try {
+            $cachedCount = $this->cache->getCachedUnreadCount($userId);
+            if ($cachedCount !== null) {
+                return $cachedCount;
+            }
+
+            $count = $this->notificationRepository->countUnread($userId);
+            $this->cache->setCachedUnreadCount($userId, $count);
+
+            return $count;
+        } catch (\Exception $e) {
+            $this->logger->error('Failed to get unread count', [
+                'error' => $e->getMessage(),
+                'userId' => $userId,
+            ]);
+            throw $e;
+        }
     }
 
     public function getNotifications(

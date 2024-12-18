@@ -13,6 +13,9 @@ use NotificationSystem\Factory\Service\RedirectServiceFactory;
 use NotificationSystem\Repository\NotificationRepository;
 use NotificationSystem\Service\NotificationService;
 use NotificationSystem\Service\RedirectService;
+use NotificationSystem\Validator\NotificationValidator;
+use NotificationSystem\Service\NotificationCacheService;
+use Laminas\Cache\Storage\Adapter\Memory;
 
 return [
     'router' => [
@@ -21,6 +24,10 @@ return [
                 'type' => Segment::class,
                 'options' => [
                     'route' => '/notification[/:action[/:id]]',
+                    'constraints' => [
+                        'action' => '[a-zA-Z][a-zA-Z0-9_-]*',
+                        'id' => '[0-9]+',
+                    ],
                     'defaults' => [
                         'controller' => NotificationController::class,
                         'action' => 'index',
@@ -50,6 +57,13 @@ return [
             NotificationService::class => NotificationServiceFactory::class,
             RedirectService::class => RedirectServiceFactory::class,
             NotificationRepository::class => NotificationRepositoryFactory::class,
+            NotificationValidator::class => function($container) {
+                return new NotificationValidator($container->get('config'));
+            },
+            NotificationCacheService::class => function($container) {
+                $cache = new Memory();
+                return new NotificationCacheService($cache);
+            },
         ],
     ],
     'view_manager' => [
@@ -90,7 +104,7 @@ return [
             ],
             'error' => [
                 'icon' => 'fas fa-times-circle',
-                'class' => 'danger',
+                'class' => 'error',
             ],
         ],
     ],
