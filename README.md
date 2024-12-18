@@ -29,7 +29,7 @@ A sophisticated notification and redirection system built as a reusable Laminas 
 
 1. Install via composer:
 ```bash
-composer require eduardobrehm/notification-system
+composer require eduardobrehm/notification-system:dev-main
 ```
 
 2. Enable the module in your `config/modules.config.php`:
