@@ -13,6 +13,17 @@ A sophisticated notification and redirection system built as a reusable Laminas 
 - Automatic cleanup of old notifications
 - AJAX and regular HTTP support
 - Fully configurable through module configuration
+- Robust validation with DTO pattern
+- Built-in caching support for improved performance
+- Comprehensive error handling and logging
+- 100% unit test coverage
+
+## Requirements
+
+- PHP 8.3 or later
+- Laminas MVC Framework 3.6 or later
+- PSR-3 compatible logger
+- Composer for dependency management
 
 ## Installation
 
@@ -39,13 +50,23 @@ return [
 // In your controller or service
 $notificationService = $container->get(NotificationService::class);
 
-$notification = $notificationService->createNotification(
+// Create a DTO for the notification
+$notificationDto = new CreateNotificationDTO(
     'success',                    // type
     'Your action was successful', // message
-    'user_profile_update',       // type_message (for redirect mapping)
+    'user_profile_update',       // type_message
     123,                         // relation_id (optional)
     'user123'                    // user_id (optional)
 );
+
+try {
+    $notification = $notificationService->createNotification($notificationDto);
+} catch (NotificationValidationException $e) {
+    // Handle validation errors
+    $errors = $e->getErrors();
+} catch (\Exception $e) {
+    // Handle other errors
+}
 ```
 
 ### Configuring Redirects
@@ -55,6 +76,24 @@ In your module config or local config:
 ```php
 return [
     'notification_system' => [
+        'notification_types' => [
+            'info' => [
+                'icon' => 'fas fa-info-circle',
+                'class' => 'info',
+            ],
+            'success' => [
+                'icon' => 'fas fa-check-circle',
+                'class' => 'success',
+            ],
+            'warning' => [
+                'icon' => 'fas fa-exclamation-triangle',
+                'class' => 'warning',
+            ],
+            'error' => [
+                'icon' => 'fas fa-times-circle',
+                'class' => 'error',
+            ],
+        ],
         'redirect_map' => [
             'user_profile_update' => [
                 'route' => 'user/profile',
@@ -77,59 +116,66 @@ $.get('/notification', { user_id: 'user123', unread: true }, function(response) 
             // Handle each notification
         });
     }
+}).fail(function(error) {
+    // Handle errors
+    console.error('Failed to fetch notifications:', error);
 });
 ```
 
-## Configuration Options
+## Advanced Features
 
-### Notification Types
+### Caching
 
-You can configure notification types with their associated icons and CSS classes:
-
-```php
-'notification_system' => [
-    'notification_types' => [
-        'info' => [
-            'icon' => 'fas fa-info-circle',
-            'class' => 'info',
-        ],
-        // ... other types
-    ],
-],
-```
-
-### Redirect Mapping
-
-Configure how different notification types should redirect:
+The system includes built-in caching support for improved performance:
+- Caches unread notification counts
+- Caches frequently accessed notifications
+- Automatic cache invalidation on updates
 
 ```php
-'notification_system' => [
-    'redirect_map' => [
-        'contract_termination' => [
-            'route' => 'contract/termination',
-            'params' => [
-                'termination_id' => 'relation_id',
-            ],
-        ],
-    ],
-],
+// Cached unread count
+$unreadCount = $notificationService->getUnreadCount('user123');
+
+// Mark as read (automatically invalidates relevant caches)
+$notificationService->markAsRead($notificationId, 'user123');
 ```
 
-## API Endpoints
+### Validation
 
-- `GET /notification` - List notifications
-- `POST /notification` - Create new notification
-- `POST /notification/{id}/read` - Mark notification as read
-- `GET /notification/types` - Get available notification types
-- `GET /notification/redirect/{id}` - Handle notification redirect
+The system includes comprehensive validation:
+- Type validation against configured notification types
+- Message length and content validation
+- Required field validation
+- Custom validation rules can be added
 
-## Events
+### Error Handling
 
-The module triggers the following events:
+Robust error handling with specific exceptions:
+- `NotificationValidationException`: For validation errors
+- `NotificationNotFoundException`: When a notification cannot be found
+- Proper error logging with PSR-3 logger
 
-- `notification.created` - When a new notification is created
-- `notification.read` - When a notification is marked as read
+## Testing
+
+The module comes with comprehensive unit tests. To run the tests:
+
+```bash
+composer test
+```
+
+For code coverage report:
+
+```bash
+composer test-coverage
+```
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Write your changes with tests
+4. Run `composer check` to ensure all tests pass
+5. Submit a Pull Request
 
 ## License
 
-MIT License - see the LICENSE file for details.
+MIT License. See [LICENSE.md](LICENSE.md) for details.

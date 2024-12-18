@@ -1,6 +1,6 @@
 {
     "name": "laminas/notification-system",
-    "description": "A sophisticated notification and redirection system",
+    "description": "A sophisticated notification and redirection system for Laminas applications",
     "type": "library",
     "license": "MIT",
     "keywords": [
@@ -10,11 +10,17 @@
     ],
     "require": {
         "php": "^8.3",
-        "laminas/laminas-mvc": "^3.3",
-        "laminas/laminas-db": "^2.12",
-        "laminas/laminas-session": "^2.12",
-        "laminas/laminas-eventmanager": "^3.5",
-        "laminas/laminas-json": "^3.3"
+        "laminas/laminas-mvc": "^3.6",
+        "laminas/laminas-db": "^2.20",
+        "laminas/laminas-json": "^3.5",
+        "laminas/laminas-cache": "^3.12",
+        "laminas/laminas-cache-storage-adapter-memory": "^2.3",
+        "psr/log": "^3.0"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^10.5",
+        "squizlabs/php_codesniffer": "^3.7",
+        "vimeo/psalm": "^5.0"
     },
     "autoload": {
         "psr-4": {
@@ -23,12 +29,18 @@
     },
     "autoload-dev": {
         "psr-4": {
-            "ApplicationTest\\": "module/Application/test/"
+            "NotificationSystemTest\\": "module/NotificationSystem/test/"
         }
     },
     "scripts": {
-        "cs-check": "vendor/bin/phpcs",
-        "cs-fix": "vendor/bin/phpcbf",
+        "check": [
+            "@cs-check",
+            "@test"
+        ],
+        "cs-check": "phpcs",
+        "cs-fix": "phpcbf",
+        "test": "phpunit --colors=always",
+        "test-coverage": "phpunit --colors=always --coverage-clover clover.xml",
         "development-disable": "laminas-development-mode disable",
         "development-enable": "laminas-development-mode enable",
         "development-status": "laminas-development-mode status",
@@ -39,7 +51,6 @@
             "php -r 'if (file_exists(\"CHANGELOG.md\")) unlink(\"CHANGELOG.md\");'"
         ],
         "serve": "php -S 0.0.0.0:8080 -t public",
-        "test": "vendor/bin/phpunit",
         "static-analysis": "vendor/bin/psalm --shepherd --stats"
     },
     "scripts-descriptions": {
@@ -53,6 +64,7 @@
     },
     "config": {
         "allow-plugins": {
+            "laminas/*": true,
             "laminas/laminas-component-installer": true,
             "laminas/laminas-skeleton-installer": true
         }
