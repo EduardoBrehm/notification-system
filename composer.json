@@ -2,7 +2,6 @@
     "name": "eduardobrehm/notification-system",
     "description": "A sophisticated notification and redirection system for Laminas applications",
     "type": "library",
-    "version": "1.0.0",
     "license": "MIT",
     "minimum-stability": "dev",
     "prefer-stable": true,
